@@ -24,3 +24,27 @@ Before starting, make sure you have:
      npm install express dotenv axios
 ```
 Note: You can also use the official OpenAI SDK if preferred.
+
+## Set up Database
+### Install:
+```
+sudo apt update && sudo apt install mariadb-server
+```
+
+### Add User:
+```
+CREATE USER 'newuser'@'localhost' IDENTIFIED BY 'newpassword';
+```
+### Add DatabaseL
+```
+USE diagnostics;
+
+CREATE TABLE IF NOT EXISTS solution_feedback (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    problem_description TEXT NOT NULL,
+    solution_id INT NOT NULL,
+    success_count INT DEFAULT 1,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE (problem_description, solution_id)
+);
+```
