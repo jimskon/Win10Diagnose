@@ -1,24 +1,28 @@
-<!-- public/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Skon's Windows 10 Diagnoser</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 2em; }
-    input, button, textarea { font-size: 1em; margin-top: 0.5em; }
-    #response { margin-top: 1em; padding: 1em; background: #f4f4f4; border: 1px solid #ccc; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Win10Diagnose</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Skon's Windows 10 Diagnostic Assistant</h1>
-  <p>Describe the issue you're experiencing with Windows 10:</p>
-  <textarea id="userQuery" rows="4" cols="50" placeholder="e.g., My computer is running very slow, or I'm having network issues."></textarea>
-  <br>
-  <button id="submitBtn">Submit</button>
-  
-  <div id="response"></div>
+    <h1>Windows 10 Diagnostic Helper</h1>
+    <form id="issueForm">
+        <label for="issue">Describe your issue:</label><br>
+        <textarea id="issue" name="issue" rows="4" cols="50" required></textarea><br>
+        <button type="submit">Get Solutions</button>
+    </form>
 
-  <script src="app.js"></script>
+    <div id="solutionsSection" style="display:none;">
+        <h2>Possible Solutions:</h2>
+        <ol id="solutionsList"></ol>
+        <form id="feedbackForm">
+            <label for="feedback">Which solution(s) worked? Enter number(s) separated by commas:</label><br>
+            <input type="text" id="feedback" name="feedback" required><br>
+            <button type="submit">Submit Feedback</button>
+        </form>
+    </div>
+
+    <script src="app.js"></script>
 </body>
 </html>

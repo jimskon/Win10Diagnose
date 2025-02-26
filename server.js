@@ -2,9 +2,18 @@ require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2');
 const { Configuration, OpenAIApi } = require('openai');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve index.html for root requests
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // Middleware
 app.use(express.json());
@@ -24,23 +33,30 @@ db.connect(err => {
 });
 
 // OpenAI Configuration
-const openai = new OpenAIApi(new Configuration({
-    apiKey: process.env.OPENAI_API_KEY
-}));
+const OpenAI = require('openai');
+const { getSystemErrorMap } = require('util');
 
-// Fetch solutions from the database
-app.get('/get-solutions', (req, res) => {
-    const { problem } = req.query;
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
+
+// Fetch solutions from the database or OpenAI
+app.post('/api/get-solutions', (req, res) => {
+    const { problem } = req.body;
+    console.log("Problem:", problem);
 
     const query = `
-        SELECT solution_id, solution_text, success_count
-        FROM solution_feedback
+        SELECT id AS solution_id, solution_text, success_count
+        FROM solutions
         WHERE problem_description = ?
         ORDER BY success_count DESC;
     `;
-
+    console.log("Query:", query);
     db.query(query, [problem], async (err, results) => {
-        if (err) return res.status(500).json({ error: 'Database query failed' });
+        if (err) {
+          console.log("Error:", err);
+          return res.status(500).json({ error: 'Database query failed' });
+        }
 
         if (results.length > 0) {
             // If solutions exist in the database, return them
@@ -52,8 +68,8 @@ app.get('/get-solutions', (req, res) => {
 
             if (aiSolution) {
                 // Store the AI-generated solution in the database
-                storeAISolution(problem, aiSolution);
-                res.json({ solutions: [{ solution_id: null, solution_text: aiSolution, success_count: 0 }] });
+                const solutionId = await storeAISolution(problem, aiSolution);
+                res.json({ solutions: [{ solution_id: solutionId, solution_text: aiSolution, success_count: 0 }] });
             } else {
                 res.json({ solutions: [] });
             }
@@ -63,63 +79,63 @@ app.get('/get-solutions', (req, res) => {
 
 // Fetch AI-generated solution
 async function getAISolution(problem) {
-    try {
-        const response = await openai.createChatCompletion({
-            model: "gpt-4",
-            messages: [{ role: "system", content: "You are an expert in diagnosing Windows 10 issues." },
-                       { role: "user", content: `How can I fix this issue? ${problem}` }]
-        });
+  try {
+      const response = await openai.chat.completions.create({
+          model: "gpt-4",
+          messages: [
+              { role: "system", content: "You are an expert in diagnosing Windows 10 issues." },
+              { role: "user", content: `How can I fix this issue? ${problem}` }
+          ]
+      });
 
-        return response.data.choices[0].message.content;
-    } catch (error) {
-        console.error("OpenAI API error:", error);
-        return null;
-    }
+      // Ensure the response is valid before accessing properties
+      if (!response || !response.choices || response.choices.length === 0) {
+          throw new Error("Invalid OpenAI API response structure");
+      }
+      console.log("AI response:", response.choices[0].message.content);
+      return response.choices[0].message.content;
+  } catch (error) {
+      console.error("OpenAI API error:", error);
+      return "I'm sorry, I couldn't generate a solution at this time. Please try again later.";
+  }
 }
 
-// Store AI-generated solutions in the database
-function storeAISolution(problem, solution) {
-    const query = `
-        INSERT INTO solution_feedback (problem_description, solution_id, solution_text, success_count)
-        VALUES (?, NULL, ?, 0);
-    `;
 
-    db.query(query, [problem, solution], (err) => {
-        if (err) console.error("Error storing AI-generated solution:", err);
-        else console.log("Stored AI-generated solution for future use.");
+// Store AI-generated solutions in the database
+async function storeAISolution(problem, solution) {
+    return new Promise((resolve, reject) => {
+        const query = `
+            INSERT INTO solutions (problem_description, solution_text, success_count)
+            VALUES (?, ?, 0);
+        `;
+
+        db.query(query, [problem, solution], (err, result) => {
+            if (err) {
+                console.error("Error storing AI-generated solution:", err);
+                reject(err);
+            } else {
+                console.log("Stored AI-generated solution for future use.");
+                resolve(result.insertId);
+            }
+        });
     });
 }
 
 // Store user feedback
-app.post('/feedback', (req, res) => {
-    const { problem, solutionId, solutionText } = req.body;
+app.post('/api/submit-feedback', (req, res) => {
+    const { solutionIds } = req.body;
 
-    if (!problem || (!solutionId && !solutionText)) {
+    if (!solutionIds || solutionIds.length === 0) {
         return res.status(400).json({ error: 'Invalid input' });
     }
 
-    let query;
-    let params;
+    const query = `
+        UPDATE solutions
+        SET success_count = success_count + 1
+        WHERE id IN (?);
+    `;
 
-    if (solutionId) {
-        // If it's a database solution, increment success count
-        query = `
-            UPDATE solution_feedback
-            SET success_count = success_count + 1
-            WHERE problem_description = ? AND solution_id = ?;
-        `;
-        params = [problem, solutionId];
-    } else {
-        // If it's an AI-generated solution, store it if not already in DB
-        query = `
-            INSERT INTO solution_feedback (problem_description, solution_id, solution_text, success_count)
-            VALUES (?, NULL, ?, 1)
-            ON DUPLICATE KEY UPDATE success_count = success_count + 1;
-        `;
-        params = [problem, solutionText];
-    }
-
-    db.query(query, params, (err) => {
+    db.query(query, [solutionIds], (err) => {
         if (err) {
             res.status(500).json({ error: 'Database error' });
         } else {

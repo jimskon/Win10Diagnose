@@ -1,30 +1,64 @@
-document.getElementById('submitBtn').addEventListener('click', async () => {
-  const userQuery = document.getElementById('userQuery').value.trim();
-  if (!userQuery) {
-    alert('Please describe your issue.');
-    return;
-  }
+document.addEventListener('DOMContentLoaded', () => {
+  const issueForm = document.getElementById('issueForm');
+  const solutionsSection = document.getElementById('solutionsSection');
+  const solutionsList = document.getElementById('solutionsList');
+  const feedbackForm = document.getElementById('feedbackForm');
 
-  const responseDiv = document.getElementById('response');
-  responseDiv.innerHTML = '<em>Processing your request...</em>'; // Italicized loading text
+  issueForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const issueDescription = document.getElementById('issue').value;
 
-  try {
-    const res = await fetch('/api/diagnose', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query: userQuery })
-    });
+      try {
+          const response = await fetch('/api/get-solutions', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ problem: issueDescription }),
+          });
 
-    const data = await res.json();
-    if (data.error) {
-      responseDiv.innerHTML = `<span style="color:red;">Error: ${data.error}</span>`;
-    } else {
-      // Use innerHTML to properly display formatted responses
-      responseDiv.innerHTML = `<div class="chat-response">${data.diagnosis}</div>`;
-    }
-  } catch (error) {
-    responseDiv.innerHTML = '<span style="color:red;">Error communicating with server.</span>';
+          if (response.ok) {
+              const data = await response.json();
+              displaySolutions(data.solutions);
+          } else {
+              console.error('Error fetching solutions');
+          }
+      } catch (error) {
+          console.error('Error:', error);
+      }
+  });
+
+  feedbackForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const feedback = document.getElementById('feedback').value;
+      const selectedSolutionIds = feedback.split(',').map(num => parseInt(num.trim()));
+
+      try {
+          const response = await fetch('/api/submit-feedback', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ solutionIds: selectedSolutionIds }),
+          });
+
+          if (response.ok) {
+              alert('Thank you for your feedback!');
+          } else {
+              console.error('Error submitting feedback');
+          }
+      } catch (error) {
+          console.error('Error:', error);
+      }
+  });
+
+  function displaySolutions(solutions) {
+      solutionsList.innerHTML = '';
+      solutions.forEach((solution, index) => {
+          const listItem = document.createElement('li');
+          listItem.textContent = solution.text;
+          solutionsList.appendChild(listItem);
+      });
+      solutionsSection.style.display = 'block';
   }
 });
