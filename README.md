@@ -48,5 +48,13 @@ CREATE TABLE IF NOT EXISTS solution_feedback (
     solution_text TEXT,
     UNIQUE (problem_description, solution_id)
 );
+
+CREATE TABLE solutions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    problem_description TEXT NOT NULL,
+    solution_text TEXT NOT NULL,
+    success_count INT DEFAULT 0
+);
+
 GRANT ALL PRIVILEGES ON diagnostics.* TO 'newuser'@'%' IDENTIFIED BY 'newpassword';
 ```
