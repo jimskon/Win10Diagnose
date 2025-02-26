@@ -35,7 +35,7 @@ sudo apt update && sudo apt install mariadb-server
 ```
 CREATE USER 'newuser'@'localhost' IDENTIFIED BY 'newpassword';
 ```
-### Add DatabaseL
+### Add Database:
 ```
 USE diagnostics;
 
@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS solution_feedback (
     solution_id INT NOT NULL,
     success_count INT DEFAULT 1,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    solution_text TEXT,
     UNIQUE (problem_description, solution_id)
 );
+GRANT ALL PRIVILEGES ON diagnostics.* TO 'newuser'@'%' IDENTIFIED BY 'newpassword';
 ```
