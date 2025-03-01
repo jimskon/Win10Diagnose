@@ -38,6 +38,7 @@ OPENAI_API_KEY=akey...
 ## Set up Database
 ### Install:
 ```
+npm install mysql2
 sudo apt update && sudo apt install mariadb-server
 ```
 
