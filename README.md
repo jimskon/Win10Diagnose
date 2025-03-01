@@ -47,6 +47,7 @@ CREATE USER 'newuser'@'localhost' IDENTIFIED BY 'newpassword';
 ```
 ### Add Database:
 ```
+create database diagnostics;
 USE diagnostics;
 
 CREATE TABLE IF NOT EXISTS solution_feedback (
