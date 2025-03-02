@@ -19,7 +19,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (response.ok) {
               const data = await response.json();
-              displaySolutions(data.solutions);
+              const diagnosis = data.solutions[0].solution_text.trim()
+                .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold
+                .replace(/\*(.*?)\*/g, "<em>$1</em>") // Italics
+                .replace(/\n/g, "<br>"); // Line breaks for better readability  
+              console.log("solutions1:",diagnosis);
+
+              displaySolutions(diagnosis);
           } else {
               console.error('Error fetching solutions');
           }
@@ -53,12 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function displaySolutions(solutions) {
-      solutionsList.innerHTML = '';
-      solutions.forEach((solution, index) => {
+      console.log("solutions2:",solutions);
+      solutionsList.innerHTML = solutions;
+      /*solutions.forEach((solution, index) => {
           const listItem = document.createElement('li');
           listItem.textContent = solution.text;
           solutionsList.appendChild(listItem);
-      });
+      });*/
       solutionsSection.style.display = 'block';
   }
 });
