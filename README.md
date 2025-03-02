@@ -25,9 +25,20 @@ Before starting, make sure you have:
 ```
 Note: You can also use the official OpenAI SDK if preferred.
 
+### Add `.env`
+```
+DB_HOST=localhost
+DB_USER=Win10Diag
+DB_PASS=apasssword
+DB_NAME=diagnostics
+PORT=3000
+OPENAI_API_KEY=akey...
+```
+
 ## Set up Database
 ### Install:
 ```
+npm install mysql2
 sudo apt update && sudo apt install mariadb-server
 ```
 
@@ -37,6 +48,7 @@ CREATE USER 'newuser'@'localhost' IDENTIFIED BY 'newpassword';
 ```
 ### Add Database:
 ```
+create database diagnostics;
 USE diagnostics;
 
 CREATE TABLE IF NOT EXISTS solution_feedback (
